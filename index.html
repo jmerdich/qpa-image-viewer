@@ -108,13 +108,16 @@ limitations under the License.
                 display: flex;
                 flex-wrap: wrap;
             }
+            .drop-highlight {
+                background-color:  lightgray;
+            }
         </style>
     </head>
     <body>
         <h1>Load PNGs from QPA output</h1>
 
         <div id="options">
-            <div class="loadoption">
+            <div class="loadoption" id="droparea">
                 <h2>Option 1: Load local QPA files</h2>
                 <!-- The file selector text cannot be changed, so we use a hidden selector trick. -->
                 <button id="fileselectorbutton">&#x1F4C2; Load files</button>
@@ -282,7 +285,50 @@ limitations under the License.
                 document.getElementById("fileselector").value = "";
             }
 
+            // Loads images from the files dropped onto the 'load files' area
+            var handleDrop = function (evt) {
+                console.log(evt);
+                var dt = evt.dataTransfer;
+                var files = dt.files;
+                for (var i = 0; i < files.length; i++) {
+                    // Creates a reader per file.
+                    var reader = new FileReader();
+                    // Grab the needed objects to use them after the file has
+                    // been read, in order to process its contents and add
+                    // images, if found, in the images <div>.
+                    reader.onload = (function () {
+                        var cbFileName = files[i].name;
+                        var cbReader = reader;
+                        return function () {
+                            processText(cbReader.result, cbFileName);
+                        };
+                    })();
+                    // Reads file contents. This will trigger the event above.
+                    reader.readAsText(files[i]);
+                }
+                unhighlightDrop(evt);
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+
+            // Adds/removes a visual indicator that dropping a file here does something
+            var highlightDrop = function (evt) {
+                document.getElementById("droparea").classList.add('drop-highlight');
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+            var unhighlightDrop = function (evt) {
+                document.getElementById("droparea").classList.remove('drop-highlight');
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+
+
             // Set event handlers for interactive elements in the page.
+            document.getElementById("droparea").addEventListener("dragenter", highlightDrop, false);
+            document.getElementById("droparea").addEventListener("dragover", highlightDrop, false);
+            document.getElementById("droparea").addEventListener("dragleave", unhighlightDrop, false);
+            document.getElementById("droparea").addEventListener("drop", handleDrop, false);
             document.getElementById("fileselector").onclick = clearSelectedFiles;
             document.getElementById("fileselector").addEventListener("change", handleFileSelect, false);
             document.getElementById("fileselectorbutton").onclick = clickFileSelector;
